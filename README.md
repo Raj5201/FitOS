@@ -34,3 +34,13 @@ Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS
 - Expanded starter food library with common gym/daily foods including whey protein, peanut butter, avocado, milk, oats, chicken, rice, eggs, bread, fruits, nuts, vegetables, and more.
 - Added Saved Recipes: build a shake/meal once and log the entire recipe in one tap to any meal.
 - Added Developer Test Date under the profile/settings menu so future-day weigh-in gates can be tested without waiting.
+
+
+## v1.2 — USDA database
+- Integrated USDA FoodData Central SR Legacy data supplied by the user.
+- USDA foods normalized: 7,793
+- Total searchable entries: 7,972
+- Nutrients used when available: calories, protein, carbs, fat, fiber, sugars, saturated fat, sodium, potassium, calcium, iron, vitamin C, vitamin D.
+- Curated FitOS foods remain at the beginning of the library.
+- Search now prioritizes exact and starts-with matches.
+- USDA SR Legacy is strongest for generic/reference foods; branded barcode products will use a separate live lookup later.

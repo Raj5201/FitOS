@@ -350,11 +350,34 @@ window.openFoodModal=(meal="Breakfast")=>{
 document.getElementById("openFoodAdd").onclick=()=>openFoodModal("Breakfast");
 document.getElementById("openRecipesBtn").onclick=openRecipes;
 function renderFoodResults(q,meal){
- const qq=q.toLowerCase().trim();const list=[...FOOD_LIBRARY,...db.customFoods].filter(f=>!qq||`${f.name} ${f.search_tags||""} ${f.brand||""}`.toLowerCase().includes(qq)).slice(0,40);
+ const qq=q.toLowerCase().trim();
+ const all=[...FOOD_LIBRARY,...db.customFoods];
+ const list=all.filter(f=>!qq||`${f.name} ${f.search_tags||""} ${f.brand||""}`.toLowerCase().includes(qq))
+   .sort((a,b)=>{
+     if(!qq)return 0;
+     const an=a.name.toLowerCase(),bn=b.name.toLowerCase();
+     const ae=an===qq?0:an.startsWith(qq)?1:2;
+     const be=bn===qq?0:bn.startsWith(qq)?1:2;
+     return ae-be;
+   }).slice(0,50);
  document.getElementById("foodResults").innerHTML=list.map(f=>`<button class="search-item" onclick="chooseFood('${f.food_id}','${meal}')"><span><strong>${f.name}</strong><small>${f.category} • ${f.calories_kcal} kcal / ${f.nutrition_basis_amount}${f.default_unit}</small></span><span>＋</span></button>`).join("");
 }
 window.chooseFood=(foodId,meal)=>{
- const f=getFoodById(foodId);openModal(`<div class="row-between"><h3>${f.name}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div><p class="muted">${f.calories_kcal} kcal • P ${f.protein_g} • C ${f.carbs_g} • F ${f.fat_g}</p><label>Amount (${f.default_unit})<input id="foodAmount" type="number" step=".1" value="${f.default_amount||100}"></label><button class="primary" onclick="logFood('${foodId}','${meal}')">Add to ${meal}</button>`)
+ const f=getFoodById(foodId);
+ const micros=[
+   f.fiber_g!==""?`Fiber ${f.fiber_g}g`:"",
+   f.sugar_g!==""?`Sugar ${f.sugar_g}g`:"",
+   f.sodium_mg!==""?`Sodium ${f.sodium_mg}mg`:"",
+   f.potassium_mg!==""?`Potassium ${f.potassium_mg}mg`:"",
+   f.calcium_mg!==""?`Calcium ${f.calcium_mg}mg`:"",
+   f.iron_mg!==""?`Iron ${f.iron_mg}mg`:""
+ ].filter(Boolean).join(" • ");
+ openModal(`<div class="row-between"><h3>${f.name}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+ <p class="muted">${f.calories_kcal} kcal • P ${f.protein_g} • C ${f.carbs_g} • F ${f.fat_g} per ${f.nutrition_basis_amount}${f.nutrition_basis_unit}</p>
+ ${micros?`<p class="muted tiny">${micros}</p>`:""}
+ <p class="muted tiny">${f.nutrition_source||""}</p>
+ <label>Amount (${f.default_unit})<input id="foodAmount" type="number" step=".1" value="${f.default_amount||100}"></label>
+ <button class="primary" onclick="logFood('${foodId}','${meal}')">Add to ${meal}</button>`)
 }
 window.logFood=(foodId,meal)=>{const amount=Number(document.getElementById("foodAmount").value);if(!amount)return;t=todayNutrition();t.items.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),foodId,meal,amount});saveDB();closeModal();renderNutrition();renderDashboard();toast("Added")}
 window.openCustomFood=(meal)=>{
