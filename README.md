@@ -28,3 +28,9 @@ Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS
 - Strength/cardio calorie burn is estimated and intentionally labeled/treated conservatively.
 - Micronutrient fields are retained in the food library when available; missing values are not treated as zero.
 - Barcode scanning is reserved for the next build because browser support/camera behavior differs across iOS versions; manual custom-food entry works now.
+
+
+## v1.1 updates
+- Expanded starter food library with common gym/daily foods including whey protein, peanut butter, avocado, milk, oats, chicken, rice, eggs, bread, fruits, nuts, vegetables, and more.
+- Added Saved Recipes: build a shake/meal once and log the entire recipe in one tap to any meal.
+- Added Developer Test Date under the profile/settings menu so future-day weigh-in gates can be tested without waiting.

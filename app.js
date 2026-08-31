@@ -23,11 +23,24 @@ let db=loadDB();
 let onboarding={step:0,sex:"",age:"",heightUnit:"cm",heightCm:"",heightFt:"",heightIn:"",weightUnit:"kg",weight:"",activity:"",targetWeight:"",bodyType:"",goal:"",days:4,duration:60};
 
 function blankDB(){
- return {profile:null,weights:{},skips:{},nutrition:{},workouts:{},measurements:{},settings:{exerciseCalorieCredit:.5},customFoods:[],savedMeals:[],lastBackup:null};
+ return {profile:null,weights:{},skips:{},nutrition:{},workouts:{},measurements:{},settings:{exerciseCalorieCredit:.5},customFoods:[],recipes:[],savedMeals:[],lastBackup:null};
 }
-function loadDB(){try{return JSON.parse(localStorage.getItem(DB_KEY))||blankDB()}catch{return blankDB()}}
+function loadDB(){
+ try{
+   const x=JSON.parse(localStorage.getItem(DB_KEY))||blankDB();
+   if(!x.recipes)x.recipes=[];
+   if(!x.customFoods)x.customFoods=[];
+   if(!x.settings)x.settings={exerciseCalorieCredit:.5};
+   return x;
+ }catch{return blankDB()}
+}
 function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
-function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function today(){
+ const forced=localStorage.getItem("fitos_test_date");
+ if(forced)return forced;
+ const d=new Date();
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 function datePretty(s=today()){return new Date(s+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})}
 function weekKey(s=today()){const d=new Date(s+"T12:00:00");const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
 function kgFrom(v,unit){return unit==="lb"?Number(v)/2.20462:Number(v)}
@@ -220,6 +233,95 @@ function renderWeightSpark(){
 }
 function waterTarget(){return Math.round(currentWeightKg()*35/250)*250}
 
+
+function recipeTotals(recipe){
+ return (recipe.ingredients||[]).reduce((a,it)=>{
+   const f=getFoodById(it.foodId); if(!f)return a;
+   const ratio=Number(it.amount)/Number(f.nutrition_basis_amount||100);
+   a.kcal+=Number(f.calories_kcal||0)*ratio;
+   a.p+=Number(f.protein_g||0)*ratio;
+   a.c+=Number(f.carbs_g||0)*ratio;
+   a.f+=Number(f.fat_g||0)*ratio;
+   return a;
+ },{kcal:0,p:0,c:0,f:0});
+}
+function openRecipes(){
+ openModal(`<div class="row-between"><h3>Saved recipes</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+ <button class="primary" style="margin-bottom:12px" onclick="startRecipeBuilder()">Create recipe</button>
+ <div id="recipeList"></div>`);
+ renderRecipeList();
+}
+function renderRecipeList(){
+ const box=document.getElementById("recipeList"); if(!box)return;
+ if(!db.recipes.length){box.innerHTML='<div class="muted tiny">No recipes yet. Build your shake once, then log it in one tap.</div>';return}
+ box.innerHTML=db.recipes.map(r=>{
+   const t=recipeTotals(r);
+   return `<div class="search-item"><span><strong>${r.name}</strong><small>${Math.round(t.kcal)} kcal • P ${Math.round(t.p)} • C ${Math.round(t.c)} • F ${Math.round(t.f)}</small></span>
+   <span style="display:flex;gap:6px"><button class="icon-btn" onclick="chooseRecipeMeal('${r.id}')">＋</button><button class="icon-btn" onclick="deleteRecipe('${r.id}')">✕</button></span></div>`
+ }).join("");
+}
+let recipeDraft=null;
+function startRecipeBuilder(){
+ recipeDraft={name:"",ingredients:[]};
+ openModal(`<div class="row-between"><h3>Create recipe</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+ <label>Recipe name<input id="recipeName" placeholder="Morning Shake"></label>
+ <div id="recipeDraftItems" style="margin:12px 0"></div>
+ <button class="secondary" style="width:100%;margin-bottom:10px" onclick="addIngredientToRecipe()">+ Add ingredient</button>
+ <button class="primary" onclick="saveRecipe()">Save recipe</button>`);
+ renderRecipeDraft();
+}
+function renderRecipeDraft(){
+ const box=document.getElementById("recipeDraftItems");if(!box)return;
+ if(!recipeDraft.ingredients.length){box.innerHTML='<div class="muted tiny">No ingredients yet.</div>';return}
+ box.innerHTML=recipeDraft.ingredients.map((it,i)=>{
+   const f=getFoodById(it.foodId);
+   return `<div class="food-row"><div><strong>${f.name}</strong><div class="food-meta">${it.amount}${f.default_unit}</div></div><span></span><button class="icon-btn" onclick="removeRecipeIngredient(${i})">✕</button></div>`
+ }).join("");
+}
+window.addIngredientToRecipe=()=>{
+ const savedName=document.getElementById("recipeName")?.value||recipeDraft.name;recipeDraft.name=savedName;
+ openModal(`<div class="row-between"><h3>Add ingredient</h3><button class="icon-btn" onclick="startRecipeBuilderFromDraft()">←</button></div>
+ <input id="recipeFoodSearch" placeholder="Search food"><div id="recipeFoodResults" class="search-results" style="margin-top:10px"></div>`);
+ const s=document.getElementById("recipeFoodSearch");const draw=()=>{
+   const q=s.value.toLowerCase();
+   document.getElementById("recipeFoodResults").innerHTML=[...FOOD_LIBRARY,...db.customFoods].filter(f=>!q||`${f.name} ${f.search_tags||""}`.toLowerCase().includes(q)).slice(0,50).map(f=>`<button class="search-item" onclick="pickRecipeFood('${f.food_id}')"><span><strong>${f.name}</strong><small>${f.calories_kcal} kcal / ${f.nutrition_basis_amount}${f.default_unit}</small></span><span>＋</span></button>`).join("")
+ };s.oninput=draw;draw();
+}
+window.startRecipeBuilderFromDraft=()=>{
+ openModal(`<div class="row-between"><h3>Create recipe</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+ <label>Recipe name<input id="recipeName" value="${recipeDraft.name||""}" placeholder="Morning Shake"></label>
+ <div id="recipeDraftItems" style="margin:12px 0"></div>
+ <button class="secondary" style="width:100%;margin-bottom:10px" onclick="addIngredientToRecipe()">+ Add ingredient</button>
+ <button class="primary" onclick="saveRecipe()">Save recipe</button>`);renderRecipeDraft();
+}
+window.pickRecipeFood=(foodId)=>{
+ const f=getFoodById(foodId);
+ openModal(`<div class="row-between"><h3>${f.name}</h3><button class="icon-btn" onclick="startRecipeBuilderFromDraft()">←</button></div>
+ <label>Amount (${f.default_unit})<input id="recipeIngredientAmount" type="number" step=".1" value="${f.default_amount||100}"></label>
+ <button class="primary" onclick="confirmRecipeIngredient('${foodId}')">Add ingredient</button>`)
+}
+window.confirmRecipeIngredient=(foodId)=>{
+ const amount=Number(document.getElementById("recipeIngredientAmount").value);if(!amount)return;
+ recipeDraft.ingredients.push({foodId,amount});startRecipeBuilderFromDraft();
+}
+window.removeRecipeIngredient=i=>{recipeDraft.ingredients.splice(i,1);renderRecipeDraft()}
+window.saveRecipe=()=>{
+ recipeDraft.name=document.getElementById("recipeName").value.trim();if(!recipeDraft.name||!recipeDraft.ingredients.length)return toast("Add a name and ingredients");
+ db.recipes.push({id:"recipe_"+Date.now(),name:recipeDraft.name,ingredients:recipeDraft.ingredients});saveDB();recipeDraft=null;openRecipes();toast("Recipe saved");
+}
+window.deleteRecipe=id=>{db.recipes=db.recipes.filter(r=>r.id!==id);saveDB();renderRecipeList()}
+window.chooseRecipeMeal=id=>{
+ const r=db.recipes.find(x=>x.id===id);
+ openModal(`<div class="row-between"><h3>${r.name}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+ <p class="muted">Choose where to log it.</p>
+ <div class="search-results">${MEALS.map(m=>`<button class="search-item" onclick="logRecipe('${id}','${m}')"><strong>${m}</strong><span>→</span></button>`).join("")}</div>`)
+}
+window.logRecipe=(id,meal)=>{
+ const r=db.recipes.find(x=>x.id===id),n=todayNutrition();
+ r.ingredients.forEach(it=>n.items.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),foodId:it.foodId,meal,amount:it.amount,recipeId:id}));
+ saveDB();closeModal();renderNutrition();renderDashboard();toast(`${r.name} logged`);
+}
+
 function renderNutrition(){
  const t=dynamicTargets(),tot=mealTotals(),n=todayNutrition();
  document.getElementById("calLeft").textContent=Math.max(0,Math.round(t.kcal-tot.kcal));
@@ -246,6 +348,7 @@ window.openFoodModal=(meal="Breakfast")=>{
  const s=document.getElementById("foodSearch");s.oninput=()=>renderFoodResults(s.value,meal);renderFoodResults("",meal);
 }
 document.getElementById("openFoodAdd").onclick=()=>openFoodModal("Breakfast");
+document.getElementById("openRecipesBtn").onclick=openRecipes;
 function renderFoodResults(q,meal){
  const qq=q.toLowerCase().trim();const list=[...FOOD_LIBRARY,...db.customFoods].filter(f=>!qq||`${f.name} ${f.search_tags||""} ${f.brand||""}`.toLowerCase().includes(qq)).slice(0,40);
  document.getElementById("foodResults").innerHTML=list.map(f=>`<button class="search-item" onclick="chooseFood('${f.food_id}','${meal}')"><span><strong>${f.name}</strong><small>${f.category} • ${f.calories_kcal} kcal / ${f.nutrition_basis_amount}${f.default_unit}</small></span><span>＋</span></button>`).join("");
@@ -336,9 +439,15 @@ document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>{document.querySelect
 document.getElementById("profileBtn").onclick=()=>{
  const t=calcTargets(db.profile,currentWeightKg());openModal(`<div class="row-between"><h3>Your setup</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
  <div class="metric-grid">${metric("Goal",db.profile.goal)}${metric("Body type",db.profile.bodyType)}${metric("Base calories",t.kcal)}${metric("Protein",t.protein+"g")}</div>
- <p class="muted tiny">Targets are reviewed from your weight trend. Daily scale noise does not automatically change them.</p><button class="secondary" style="width:100%" onclick="resetApp()">Reset app</button>`)
+ <p class="muted tiny">Targets are reviewed from your weight trend. Daily scale noise does not automatically change them.</p>
+ <div class="card" style="margin-top:12px"><strong>Developer test date</strong><p class="muted tiny">Use this only to test future weigh-in gates. Leave blank for the real date.</p>
+ <input id="testDateInput" type="date" value="${localStorage.getItem("fitos_test_date")||""}">
+ <div class="backup-grid" style="margin-top:8px"><button class="secondary" onclick="setTestDate()">Use test date</button><button class="secondary" onclick="clearTestDate()">Use real date</button></div></div>
+ <button class="secondary" style="width:100%" onclick="resetApp()">Reset app</button>`)
 }
-window.resetApp=()=>{if(confirm("Erase all FitOS data on this phone?")){localStorage.removeItem(DB_KEY);location.reload()}}
+window.setTestDate=()=>{const v=document.getElementById("testDateInput").value;if(!v)return toast("Pick a date");localStorage.setItem("fitos_test_date",v);location.reload()}
+window.clearTestDate=()=>{localStorage.removeItem("fitos_test_date");location.reload()}
+window.resetApp=()=>{if(confirm("Erase all FitOS data on this phone?")){localStorage.removeItem(DB_KEY);localStorage.removeItem("fitos_test_date");location.reload()}}
 
 document.getElementById("exportBackupBtn").onclick=()=>{
  const blob=new Blob([JSON.stringify({app:"FitOS",version:1,exportedAt:new Date().toISOString(),data:db},null,2)],{type:"application/json"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=`FitOS-backup-${today()}.json`;a.click();URL.revokeObjectURL(u);db.lastBackup=new Date().toISOString();saveDB();document.getElementById("backupStatus").textContent="Backup exported just now.";
