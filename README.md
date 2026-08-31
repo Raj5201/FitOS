@@ -1,0 +1,30 @@
+# FitOS v1
+
+A private, offline-first iPhone PWA for:
+- onboarding + BMR/TDEE/BMI calculations
+- goal calories/macros
+- daily weight gate (max 2 skips/week)
+- nutrition with the supplied 152-food library
+- 5 meal sections + water
+- custom foods
+- strength workout plans for 3–6 days/week
+- last-session numbers + weight PR detection
+- walking/treadmill logging
+- 50% exercise-calorie credit
+- monthly measurements
+- progress dashboard
+- local JSON backup/restore
+
+## Run locally on Windows
+Open PowerShell in the extracted folder:
+python -m http.server 8080
+Then open http://localhost:8080
+
+## Deploy
+Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS.
+
+## Notes
+- Fitness calculations are starting estimates, not medical advice.
+- Strength/cardio calorie burn is estimated and intentionally labeled/treated conservatively.
+- Micronutrient fields are retained in the food library when available; missing values are not treated as zero.
+- Barcode scanning is reserved for the next build because browser support/camera behavior differs across iOS versions; manual custom-food entry works now.

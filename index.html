@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitOS">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+<title>FitOS</title>
+</head>
+<body>
+<div id="app">
+  <section id="onboarding" class="screen hidden">
+    <div class="onboard-wrap">
+      <div class="brand">FitOS <span>beta</span></div>
+      <div id="onboardStep"></div>
+    </div>
+  </section>
+
+  <section id="weightGate" class="screen hidden">
+    <div class="gate-card">
+      <div class="eyebrow" id="gateDate"></div>
+      <h1>Today starts here.</h1>
+      <p>Log your weight to unlock nutrition and training.</p>
+      <div class="big-input-row">
+        <input id="gateWeight" type="number" inputmode="decimal" step="0.1" placeholder="0.0">
+        <span id="gateWeightUnit">kg</span>
+      </div>
+      <button id="saveWeightBtn" class="primary">Continue</button>
+      <button id="skipWeightBtn" class="ghost">Skip today <span id="skipCountText"></span></button>
+    </div>
+  </section>
+
+  <section id="mainApp" class="screen hidden">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow" id="todaySmall"></div>
+        <div class="brand">FitOS</div>
+      </div>
+      <button id="profileBtn" class="avatar">◉</button>
+    </header>
+
+    <main>
+      <section id="dashboardView" class="view active">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">TODAY</div>
+            <h1 id="helloTitle">Ready.</h1>
+            <p id="heroSub"></p>
+          </div>
+          <div class="mini-ring"><span id="dayScore">0%</span></div>
+        </div>
+
+        <div class="metric-grid" id="dashboardMetrics"></div>
+
+        <div class="card">
+          <div class="row-between">
+            <h3>Weight trend</h3><span class="muted" id="weightTrendText"></span>
+          </div>
+          <div id="weightSpark" class="spark"></div>
+        </div>
+
+        <div class="card">
+          <div class="row-between"><h3>Today's plan</h3><span id="todaySplitPill" class="pill"></span></div>
+          <div id="todayPlanPreview"></div>
+        </div>
+
+        <div class="card">
+          <h3>Progress</h3>
+          <div id="progressSummary"></div>
+        </div>
+      </section>
+
+      <section id="nutritionView" class="view">
+        <div class="section-head">
+          <div><div class="eyebrow">NUTRITION</div><h2>Eat with intent.</h2></div>
+          <button id="openFoodAdd" class="round-btn">+</button>
+        </div>
+        <div class="macro-card">
+          <div class="cal-big"><span id="calLeft">0</span><small>kcal left</small></div>
+          <div class="macro-bars" id="macroBars"></div>
+        </div>
+        <div class="water-card">
+          <div><strong>Water</strong><div class="muted"><span id="waterNow">0</span> / <span id="waterTarget">0</span> ml</div></div>
+          <div class="water-actions"><button data-water="250">+250</button><button data-water="500">+500</button></div>
+        </div>
+        <div id="mealSections"></div>
+      </section>
+
+      <section id="trainingView" class="view">
+        <div class="section-head">
+          <div><div class="eyebrow">TRAINING</div><h2 id="trainingTitle">Today's workout</h2></div>
+          <button id="addExerciseBtn" class="round-btn">+</button>
+        </div>
+        <div id="trainingSummary" class="mini-summary"></div>
+        <div id="exerciseCards"></div>
+
+        <div class="card cardio-card">
+          <div class="row-between"><h3>Cardio</h3><span class="pill">50% calories added back</span></div>
+          <div class="form-grid-2">
+            <label>Type<select id="cardioType"><option>Walking</option><option>Treadmill</option></select></label>
+            <label>Minutes<input id="cardioMinutes" type="number" min="0" inputmode="numeric"></label>
+            <label>Distance<input id="cardioDistance" type="number" min="0" step="0.1" inputmode="decimal"></label>
+            <label id="distanceUnitLabel">Distance (km)</label>
+          </div>
+          <button id="saveCardioBtn" class="secondary">Save cardio</button>
+          <div id="cardioResult" class="muted"></div>
+        </div>
+
+        <button id="saveWorkoutBtn" class="primary sticky-save">Finish workout</button>
+      </section>
+
+      <section id="progressView" class="view">
+        <div class="section-head"><div><div class="eyebrow">PROGRESS</div><h2>Proof over promises.</h2></div></div>
+        <div class="metric-grid" id="progressMetrics"></div>
+        <div class="card">
+          <div class="row-between"><h3>Monthly measurements</h3><span class="pill" id="measureDue"></span></div>
+          <div class="measurement-grid">
+            <label>Waist<input id="mWaist" type="number" step="0.1"></label>
+            <label>Chest<input id="mChest" type="number" step="0.1"></label>
+            <label>Hips<input id="mHips" type="number" step="0.1"></label>
+            <label>Upper arm<input id="mArm" type="number" step="0.1"></label>
+            <label>Thigh<input id="mThigh" type="number" step="0.1"></label>
+          </div>
+          <button id="saveMeasurementsBtn" class="secondary">Save measurements</button>
+        </div>
+        <div class="card">
+          <h3>Backup & restore</h3>
+          <p class="muted">Your data stays on this phone. Export a backup regularly.</p>
+          <div class="backup-grid">
+            <button id="exportBackupBtn" class="secondary">Export backup</button>
+            <label class="secondary file-label">Restore<input id="importBackup" type="file" accept=".json,application/json" hidden></label>
+          </div>
+          <div class="muted tiny" id="backupStatus"></div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button data-view="dashboardView" class="nav active"><span>⌂</span><small>Today</small></button>
+      <button data-view="nutritionView" class="nav"><span>◒</span><small>Nutrition</small></button>
+      <button data-view="trainingView" class="nav"><span>↗</span><small>Training</small></button>
+      <button data-view="progressView" class="nav"><span>⌁</span><small>Progress</small></button>
+    </nav>
+  </section>
+
+  <div id="modal" class="modal hidden"><div class="modal-sheet" id="modalSheet"></div></div>
+  <div id="toast" class="toast hidden"></div>
+</div>
+<script src="food-library.js"></script>
+<script src="exercise-library.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
