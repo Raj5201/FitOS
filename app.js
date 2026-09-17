@@ -59,8 +59,6 @@ function loadDB(){
 }
 function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db))}
 function today(){
- const forced=localStorage.getItem("fitos_test_date");
- if(forced)return forced;
  const d=new Date();
  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
@@ -671,14 +669,9 @@ document.getElementById("profileBtn").onclick=()=>{
  const t=calcTargets(db.profile,currentWeightKg());openModal(`<div class="row-between"><h3>Your setup</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
  <div class="metric-grid">${metric("Goal",db.profile.goal)}${metric("Body type",db.profile.bodyType)}${metric("Base calories",t.kcal)}${metric("Protein",t.protein+"g")}</div>
  <p class="muted tiny">Targets are reviewed from your weight trend. Daily scale noise does not automatically change them.</p>
- <div class="card" style="margin-top:12px"><strong>Developer test date</strong><p class="muted tiny">Use this only to test future weigh-in gates. Leave blank for the real date.</p>
- <input id="testDateInput" type="date" value="${localStorage.getItem("fitos_test_date")||""}">
- <div class="backup-grid" style="margin-top:8px"><button class="secondary" onclick="setTestDate()">Use test date</button><button class="secondary" onclick="clearTestDate()">Use real date</button></div></div>
  <button class="secondary" style="width:100%" onclick="resetApp()">Reset app</button>`)
 }
-window.setTestDate=()=>{const v=document.getElementById("testDateInput").value;if(!v)return toast("Pick a date");localStorage.setItem("fitos_test_date",v);location.reload()}
-window.clearTestDate=()=>{localStorage.removeItem("fitos_test_date");location.reload()}
-window.resetApp=()=>{if(confirm("Erase all FitOS data on this phone?")){localStorage.removeItem(DB_KEY);localStorage.removeItem("fitos_test_date");location.reload()}}
+window.resetApp=()=>{if(confirm("Erase all FitOS data on this phone?")){localStorage.removeItem(DB_KEY);location.reload()}}
 
 document.getElementById("exportBackupBtn").onclick=()=>{
  const blob=new Blob([JSON.stringify({app:"FitOS",version:1,exportedAt:new Date().toISOString(),data:db},null,2)],{type:"application/json"});const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=`FitOS-backup-${today()}.json`;a.click();URL.revokeObjectURL(u);db.lastBackup=new Date().toISOString();saveDB();document.getElementById("backupStatus").textContent="Backup exported just now.";

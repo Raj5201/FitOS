@@ -1,4 +1,4 @@
-# FitOS v1.4
+# FitOS v1.4.1
 
 A private, offline-first iPhone PWA for:
 - onboarding + BMR/TDEE/BMI calculations
@@ -38,7 +38,6 @@ Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS
 ## v1.1 updates
 - Expanded starter food library with common gym/daily foods including whey protein, peanut butter, avocado, milk, oats, chicken, rice, eggs, bread, fruits, nuts, vegetables, and more.
 - Added Saved Recipes: build a shake/meal once and log the entire recipe in one tap to any meal.
-- Added Developer Test Date under the profile/settings menu so future-day weigh-in gates can be tested without waiting.
 
 
 ## v1.2 — USDA database
