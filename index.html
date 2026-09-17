@@ -124,6 +124,47 @@
         <button id="saveWorkoutBtn" class="primary sticky-save">Finish workout</button>
       </section>
 
+      <section id="stepsView" class="view">
+        <div class="section-head">
+          <div><div class="eyebrow">ACTIVITY</div><h2>Move with intent.</h2></div>
+          <span class="pill">Manual check-in</span>
+        </div>
+
+        <div class="step-hero-card">
+          <div class="row-between">
+            <div><div class="eyebrow">TODAY</div><div class="step-big" id="stepsTodayValue">0</div><div class="muted">of <span id="stepsTargetValue">0</span> steps</div></div>
+            <div class="step-ring" id="stepRing"><span id="stepPercent">0%</span></div>
+          </div>
+          <div class="bar-track step-progress"><div class="bar-fill" id="stepProgressBar"></div></div>
+          <div id="stepStatus" class="step-status"></div>
+          <div class="form-grid-2 step-inputs">
+            <label>Today's steps<input id="stepsTodayInput" type="number" min="0" inputmode="numeric" placeholder="10000"></label>
+            <label>Daily target<input id="stepsTargetInput" type="number" min="1000" step="500" inputmode="numeric"></label>
+          </div>
+          <div class="backup-grid"><button id="saveTodayStepsBtn" class="primary">Save steps</button><button id="saveStepTargetBtn" class="secondary">Save target</button></div>
+        </div>
+
+        <div class="metric-grid" id="stepMetrics"></div>
+
+        <div class="card">
+          <div class="row-between"><div><h3>14-day activity</h3><div class="muted tiny" id="stepTrendLabel"></div></div><span class="pill" id="stepLoggedLabel"></span></div>
+          <div id="stepChart" class="step-chart"></div>
+        </div>
+
+        <div class="card insight-card">
+          <div class="eyebrow">FITOS INSIGHT</div>
+          <h3 id="stepInsightTitle">Building your baseline</h3>
+          <p class="muted" id="stepInsightText"></p>
+        </div>
+
+        <div class="card">
+          <div class="row-between"><div><h3>Recent entries</h3><div class="muted tiny">Tap a day to correct it.</div></div></div>
+          <div id="stepHistoryList" class="step-history-list"></div>
+        </div>
+
+        <div class="card"><p class="muted tiny step-method">Estimated distance and walking calories are informational only. FitOS does not add them to your food budget, preventing normal activity from being counted twice.</p></div>
+      </section>
+
       <section id="progressView" class="view">
         <div class="section-head"><div><div class="eyebrow">PROGRESS</div><h2>Proof over promises.</h2></div></div>
         <div class="metric-grid" id="progressMetrics"></div>
@@ -154,6 +195,7 @@
       <button data-view="dashboardView" class="nav active"><span>⌂</span><small>Today</small></button>
       <button data-view="nutritionView" class="nav"><span>◒</span><small>Nutrition</small></button>
       <button data-view="trainingView" class="nav"><span>↗</span><small>Training</small></button>
+      <button data-view="stepsView" class="nav"><span>⇡</span><small>Steps</small></button>
       <button data-view="progressView" class="nav"><span>⌁</span><small>Progress</small></button>
     </nav>
   </section>

@@ -1,4 +1,4 @@
-# FitOS v1.3
+# FitOS v1.4
 
 A private, offline-first iPhone PWA for:
 - onboarding + BMR/TDEE/BMI calculations
@@ -13,6 +13,7 @@ A private, offline-first iPhone PWA for:
 - estimated muscle-contribution percentages for every exercise
 - last-session numbers + weight PR detection
 - daily steps plus walking/treadmill logging
+- dedicated Steps analysis with targets, trends, adherence, streaks, records, and progress insights
 - editable 7-day dashboard history
 - 50% exercise-calorie credit
 - monthly measurements
@@ -58,3 +59,11 @@ Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS
 - Added daily step tracking and an editable rolling 7-day dashboard history for weight, steps, meals, water, cardio, and workouts.
 - Food entry uses ml for liquids, grams for solids, and quantities for supported standard items such as eggs and berries.
 - No additional bulk food dump was bundled in v1.3; this keeps the PWA download reasonable while preserving the existing 7,972 searchable entries.
+
+## v1.4 — serious step tracking
+
+- Added a dedicated Steps tab with manual daily entry and an editable personal target.
+- Added 7-day and 30-day averages, weekly adherence, current streak, personal record, and a 14-day chart.
+- Added estimated walking distance and calories for context only; step calories are not added to the nutrition budget.
+- Added FitOS activity insights that compare recent movement and, when enough data exists, weight direction.
+- Steps now contribute proportionally to the daily consistency score.

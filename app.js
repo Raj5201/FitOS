@@ -53,6 +53,7 @@ function loadDB(){
    if(!x.customFoods)x.customFoods=[];
    if(!x.settings)x.settings={exerciseCalorieCredit:.5};
    if(!x.steps)x.steps={};
+   if(x.profile&&!x.profile.stepTarget)x.profile.stepTarget=defaultStepTarget(x.profile.activity);
    return x;
  }catch{return blankDB()}
 }
@@ -71,6 +72,7 @@ function round(n,d=0){const p=10**d;return Math.round(n*p)/p}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.remove("hidden");setTimeout(()=>t.classList.add("hidden"),1500)}
 function calcHeightCm(o){return o.heightUnit==="cm"?Number(o.heightCm):(Number(o.heightFt)*30.48+Number(o.heightIn)*2.54)}
 function activityFactor(id){return ACTIVITY.find(x=>x.id===id)?.factor||1.2}
+function defaultStepTarget(activity){return {sedentary:6000,light:7500,moderate:9000,very:11000,high:12000}[activity]||8000}
 function bmr(sex,kg,cm,age){return 10*kg+6.25*cm-5*age+(sex==="Male"?5:-161)}
 function calcTargets(profile,currentKg){
  const maintenance=Math.round(bmr(profile.sex,currentKg,profile.heightCm,profile.age)*activityFactor(profile.activity));
@@ -203,9 +205,9 @@ function syncBasic(){
  onboarding.age=get("oAge")||onboarding.age;onboarding.weight=get("oWeight")||onboarding.weight;
  onboarding.heightCm=get("oHeightCm")||onboarding.heightCm;onboarding.heightFt=get("oHeightFt")||onboarding.heightFt;onboarding.heightIn=get("oHeightIn")||onboarding.heightIn;
 }
-function previewProfile(){return {sex:onboarding.sex,age:Number(onboarding.age),heightCm:calcHeightCm(onboarding),weightUnit:onboarding.weightUnit,startWeightKg:kgFrom(onboarding.weight,onboarding.weightUnit),activity:onboarding.activity,targetWeightKg:kgFrom(onboarding.targetWeight,onboarding.weightUnit),bodyType:onboarding.bodyType,goal:onboarding.goal,days:Number(onboarding.days),duration:Number(onboarding.duration),createdAt:today()}}
+function previewProfile(){return {sex:onboarding.sex,age:Number(onboarding.age),heightCm:calcHeightCm(onboarding),weightUnit:onboarding.weightUnit,startWeightKg:kgFrom(onboarding.weight,onboarding.weightUnit),activity:onboarding.activity,targetWeightKg:kgFrom(onboarding.targetWeight,onboarding.weightUnit),bodyType:onboarding.bodyType,goal:onboarding.goal,days:Number(onboarding.days),duration:Number(onboarding.duration),stepTarget:defaultStepTarget(onboarding.activity),createdAt:today()}}
 function safePace(goal){return goal==="Lose fat"?"About 0.5–0.75% body weight/week":goal==="Gain muscle"?"Slow gain: roughly 0.1–0.25%/week":goal==="Recomp"?"Scale may move slowly; strength and waist matter more":"Hold roughly steady"}
-function splitName(days){return days===3?"Full Body":days===4?"Upper / Lower":days===5?"PPL + Upper / Lower":"Push / Pull / Legs"}
+function splitName(days){return days===3?"Full Body":days===4?"Full Body A / B":days===5?"PPL + Upper / Lower":"Push / Pull / Legs"}
 window.finishOnboarding=()=>{
  db.profile=previewProfile(); db.weights[today()]=db.profile.startWeightKg; buildWeeklyTemplate();saveDB();show("mainApp");renderAll();toast("Plan built");
 }
@@ -253,7 +255,7 @@ function ensureWorkout(){
 function renderAll(){
  document.getElementById("todaySmall").textContent=datePretty().toUpperCase();
  renderEditDateBanners();
- renderDashboard();renderNutrition();renderTraining();renderProgress();
+ renderDashboard();renderNutrition();renderTraining();renderSteps();renderProgress();
 }
 function renderEditDateBanners(){
  ["nutritionEditDate","trainingEditDate"].forEach(id=>{
@@ -269,9 +271,10 @@ function renderDashboard(){
  document.getElementById("helloTitle").textContent=db.profile.goal==="Lose fat"?"Cut smart.":db.profile.goal==="Gain muscle"?"Build smart.":"Stay consistent.";
  document.getElementById("heroSub").textContent=`${round(displayWeight(w),1)} ${db.profile.weightUnit} → ${round(displayWeight(tw),1)} ${db.profile.weightUnit}`;
  const workout=db.workouts[dashboardDate],n=todayNutrition(dashboardDate),split=todaySplit(dashboardDate);
- const score=Math.round(((totals.p>=t.protein*.9?1:0)+(totals.kcal>=t.kcal*.9&&totals.kcal<=t.kcal*1.1?1:0)+(workout?.finished?1:split==="Recovery"?1:0)+(n.water>=waterTarget(dashboardDate)?1:0))/4*100);
+ const target=stepTarget(),stepProgress=Math.min(1,Number(db.steps[dashboardDate]||0)/target);
+ const score=Math.round(((totals.p>=t.protein*.9?1:0)+(totals.kcal>=t.kcal*.9&&totals.kcal<=t.kcal*1.1?1:0)+(workout?.finished?1:split==="Recovery"?1:0)+(n.water>=waterTarget(dashboardDate)?1:0)+stepProgress)/5*100);
  document.getElementById("dayScore").textContent=score+"%";
- document.getElementById("dashboardMetrics").innerHTML=metric("Calories",`${Math.round(totals.kcal)} / ${t.kcal}`)+metric("Protein",`${Math.round(totals.p)} / ${t.protein}g`)+metric("Workout",workout?.finished?"Done":split)+metric("Steps",Number(db.steps[dashboardDate]||0).toLocaleString());
+ document.getElementById("dashboardMetrics").innerHTML=metric("Calories",`${Math.round(totals.kcal)} / ${t.kcal}`)+metric("Protein",`${Math.round(totals.p)} / ${t.protein}g`)+metric("Workout",workout?.finished?"Done":split)+metric("Steps",`${Number(db.steps[dashboardDate]||0).toLocaleString()} / ${target.toLocaleString()}`);
  renderSevenDayHistory();
  renderWeightSpark();
  document.getElementById("todaySplitPill").textContent=split;
@@ -280,10 +283,65 @@ function renderDashboard(){
  document.getElementById("progressSummary").innerHTML=`<div class="plan-row"><span>Goal</span><strong>${db.profile.goal}</strong></div><div class="plan-row"><span>Target physique</span><strong>${db.profile.bodyType}</strong></div><div class="plan-row"><span>Target weight</span><strong>${round(displayWeight(db.profile.targetWeightKg),1)} ${db.profile.weightUnit}</strong></div>`;
 }
 function metric(label,value){return `<div class="metric"><div class="label">${label}</div><div class="value">${value}</div></div>`}
-function lastSevenDates(){
- const base=new Date(today()+"T12:00:00");
- return Array.from({length:7},(_,i)=>{const d=new Date(base);d.setDate(base.getDate()-(6-i));return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`});
+function dateShift(date,days){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+days);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function trailingDates(count,end=today()){return Array.from({length:count},(_,i)=>dateShift(end,i-(count-1)))}
+function lastSevenDates(){return trailingDates(7)}
+function stepTarget(){return Math.max(1000,Number(db.profile.stepTarget)||defaultStepTarget(db.profile.activity))}
+function mean(values){return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0}
+function loggedSteps(dates){return dates.filter(date=>Object.prototype.hasOwnProperty.call(db.steps,date)).map(date=>Number(db.steps[date])||0)}
+function weightValues(dates){return dates.filter(date=>db.weights[date]!=null).map(date=>Number(db.weights[date]))}
+function currentStepStreak(target){
+ let date=today();
+ if(!Object.prototype.hasOwnProperty.call(db.steps,date))date=dateShift(date,-1);
+ let streak=0;
+ while(Number(db.steps[date])>=target){streak++;date=dateShift(date,-1)}
+ return streak;
 }
+function stepAnalytics(){
+ const target=stepTarget(),dates7=trailingDates(7),dates14=trailingDates(14),dates30=trailingDates(30),previous7=trailingDates(7,dateShift(today(),-7));
+ const values7=loggedSteps(dates7),values30=loggedSteps(dates30),previousValues=loggedSteps(previous7);
+ const hits7=dates7.filter(date=>Number(db.steps[date])>=target).length;
+ const entries=Object.entries(db.steps).filter(([,value])=>Number(value)>=0);
+ const record=entries.length?Math.max(...entries.map(([,value])=>Number(value)||0)):0;
+ const avg7=Math.round(mean(values7)),avg30=Math.round(mean(values30)),previousAvg=Math.round(mean(previousValues));
+ const trend=values7.length>=4&&previousValues.length>=4&&previousAvg?Math.round((avg7-previousAvg)/previousAvg*100):null;
+ const strideM=Number(db.profile.heightCm||170)*(db.profile.sex==="Female"?.413:.415)/100;
+ const todaySteps=Number(db.steps[today()]||0),distanceKm=todaySteps*strideM/1000,walkingKcal=Math.round(distanceKm*weightAt(today())*.5);
+ return {target,dates7,dates14,dates30,previous7,values7,values30,previousValues,hits7,record,avg7,avg30,previousAvg,trend,strideM,todaySteps,distanceKm,walkingKcal,streak:currentStepStreak(target)};
+}
+function stepInsight(stats){
+ if(stats.values7.length<4)return {title:"Build a reliable baseline",text:`Log at least 4 of the next 7 days. Once FitOS has enough entries, it can compare your movement with weight and nutrition trends instead of guessing.`};
+ const currentWeights=weightValues(stats.dates7),previousWeights=weightValues(stats.previous7),weightDelta=currentWeights.length>=3&&previousWeights.length>=3?mean(currentWeights)-mean(previousWeights):null;
+ if(db.profile.goal==="Lose fat"&&weightDelta!==null&&weightDelta>-0.15&&stats.trend!==null&&stats.trend<=-10)return {title:"Restore movement before cutting food",text:`Your step average is down ${Math.abs(stats.trend)}% while the weight trend is not falling clearly. Bring activity back toward ${stats.target.toLocaleString()} steps before reducing calories.`};
+ if(stats.avg7<stats.target*.8){const increase=Math.min(1000,Math.max(500,Math.round((stats.target-stats.avg7)/500)*500));return {title:"Raise the floor gradually",text:`Your 7-day average is ${stats.avg7.toLocaleString()}. Aim for about ${increase.toLocaleString()} more steps per day next week instead of forcing the full target immediately.`};}
+ if(stats.hits7>=6)return {title:"Target is under control",text:`You reached your target on ${stats.hits7} of the last 7 days. Maintain this level; only raise the target if recovery, training performance, and hunger remain stable.`};
+ if(stats.trend!==null&&stats.trend>=10)return {title:"Activity is trending up",text:`Your 7-day step average increased ${stats.trend}% from the previous week. Hold this level long enough to make it repeatable before adding more.`};
+ return {title:"Close the consistency gap",text:`Your average is ${stats.avg7.toLocaleString()} steps with ${stats.hits7}/7 target days. Focus on making the remaining low days more active rather than pushing your best day higher.`};
+}
+function renderSteps(){
+ const stats=stepAnalytics(),pct=Math.round(stats.todaySteps/stats.target*100),visualPct=Math.min(100,pct),insight=stepInsight(stats);
+ document.getElementById("stepsTodayValue").textContent=stats.todaySteps.toLocaleString();
+ document.getElementById("stepsTargetValue").textContent=stats.target.toLocaleString();
+ document.getElementById("stepPercent").textContent=pct+"%";
+ document.getElementById("stepRing").style.setProperty("--step-pct",`${visualPct*3.6}deg`);
+ document.getElementById("stepProgressBar").style.width=visualPct+"%";
+ document.getElementById("stepsTodayInput").value=Object.prototype.hasOwnProperty.call(db.steps,today())?stats.todaySteps:"";
+ document.getElementById("stepsTargetInput").value=stats.target;
+ const remaining=Math.max(0,stats.target-stats.todaySteps);
+ document.getElementById("stepStatus").textContent=!Object.prototype.hasOwnProperty.call(db.steps,today())?"Check Apple Health and log your steps when you're ready.":remaining?`${remaining.toLocaleString()} steps remaining today.`:`Target reached${stats.todaySteps>stats.target?` by ${(stats.todaySteps-stats.target).toLocaleString()} steps`:""}.`;
+ const distance=db.profile.weightUnit==="lb"?`${round(stats.distanceKm*.621371,1)} mi`:`${round(stats.distanceKm,1)} km`;
+ document.getElementById("stepMetrics").innerHTML=metric(`7-day avg (${stats.values7.length} logged)`,stats.values7.length?stats.avg7.toLocaleString():"—")+metric(`30-day avg (${stats.values30.length} logged)`,stats.values30.length?stats.avg30.toLocaleString():"—")+metric("Weekly adherence",`${stats.hits7}/7 days`)+metric("Current streak",`${stats.streak} day${stats.streak===1?"":"s"}`)+metric("Personal record",stats.record?stats.record.toLocaleString():"—")+metric("Today's estimate",`${distance} · ${stats.walkingKcal} kcal`);
+ const chartMax=Math.max(stats.target,...stats.dates14.map(date=>Number(db.steps[date])||0),1);
+ document.getElementById("stepChart").innerHTML=stats.dates14.map(date=>{const value=Number(db.steps[date])||0,logged=Object.prototype.hasOwnProperty.call(db.steps,date),height=logged?Math.max(3,value/chartMax*100):2,d=new Date(date+"T12:00:00");return `<div class="step-bar-wrap ${date===today()?"today":""}" title="${date}: ${logged?value.toLocaleString():"not logged"}"><div class="step-bar ${value>=stats.target?"hit":""}" style="height:${height}%"></div><small>${d.toLocaleDateString(undefined,{weekday:"narrow"})}</small></div>`}).join("");
+ document.getElementById("stepTrendLabel").textContent=stats.trend===null?"Log 4+ days in both weeks to unlock comparison.":`${stats.trend>=0?"+":""}${stats.trend}% versus the previous 7-day average.`;
+ document.getElementById("stepLoggedLabel").textContent=`${loggedSteps(stats.dates14).length}/14 logged`;
+ document.getElementById("stepInsightTitle").textContent=insight.title;document.getElementById("stepInsightText").textContent=insight.text;
+ document.getElementById("stepHistoryList").innerHTML=stats.dates14.slice().reverse().map(date=>{const logged=Object.prototype.hasOwnProperty.call(db.steps,date),value=Number(db.steps[date])||0,hit=value>=stats.target;return `<button class="step-history-row" onclick="openStepEditor('${date}')"><span><strong>${datePretty(date)}</strong><small>${logged?`${Math.round(value/stats.target*100)}% of target`:"Not logged"}</small></span><strong>${logged?value.toLocaleString():"—"}</strong><span class="${logged?(hit?"step-hit":"step-miss"):"muted"}">${logged?(hit?"Reached":"Below"):"Add"}</span></button>`}).join("");
+}
+document.getElementById("saveTodayStepsBtn").onclick=()=>{const value=Number(document.getElementById("stepsTodayInput").value);if(value<0||!Number.isFinite(value))return toast("Enter valid steps");db.steps[today()]=Math.round(value);saveDB();renderAll();toast("Steps saved")}
+document.getElementById("saveStepTargetBtn").onclick=()=>{const value=Math.round(Number(document.getElementById("stepsTargetInput").value));if(value<1000||value>50000)return toast("Choose a target from 1,000 to 50,000");db.profile.stepTarget=value;saveDB();renderAll();toast("Step target saved")}
+window.openStepEditor=date=>{const value=Object.prototype.hasOwnProperty.call(db.steps,date)?db.steps[date]:"";openModal(`<div class="row-between"><div><div class="eyebrow">EDIT STEPS</div><h3>${datePretty(date)}</h3></div><button class="icon-btn" onclick="closeModal()">✕</button></div><label>Steps<input id="stepEditValue" type="number" min="0" inputmode="numeric" value="${value}"></label><button class="primary" onclick="saveStepEntry('${date}')">Save entry</button>`)}
+window.saveStepEntry=date=>{const input=document.getElementById("stepEditValue"),raw=input.value.trim();if(raw==="")delete db.steps[date];else{const value=Number(raw);if(value<0||!Number.isFinite(value))return toast("Enter valid steps");db.steps[date]=Math.round(value)}saveDB();closeModal();renderAll();toast("Step entry updated")}
 function renderSevenDayHistory(){
  const box=document.getElementById("sevenDayHistory");if(!box)return;
  box.innerHTML=lastSevenDates().map(date=>{
@@ -438,7 +496,7 @@ document.getElementById("logStepsBtn").onclick=()=>{
  <label>Steps<input id="quickSteps" type="number" inputmode="numeric" value="${db.steps[date]||""}" placeholder="10000"></label>
  <button class="primary" onclick="saveQuickSteps('${date}')">Save steps</button>`)
 }
-window.saveQuickSteps=date=>{db.steps[date]=Math.max(0,Number(document.getElementById("quickSteps").value)||0);saveDB();closeModal();renderDashboard();toast("Steps saved")}
+window.saveQuickSteps=date=>{db.steps[date]=Math.max(0,Number(document.getElementById("quickSteps").value)||0);saveDB();closeModal();renderAll();toast("Steps saved")}
 window.deleteFood=id=>{const n=todayNutrition();n.items=n.items.filter(i=>i.id!==id);saveDB();renderNutrition();renderDashboard()}
 
 function openModal(html){document.getElementById("modalSheet").innerHTML=html;document.getElementById("modal").classList.remove("hidden")}
