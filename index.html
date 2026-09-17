@@ -59,6 +59,14 @@
 
         <div class="card">
           <div class="row-between">
+            <div><h3>Last 7 days</h3><div class="muted tiny">Tap any day to correct weight, steps, meals or training.</div></div>
+            <button id="logStepsBtn" class="text-pill">Log steps</button>
+          </div>
+          <div id="sevenDayHistory" class="history-strip"></div>
+        </div>
+
+        <div class="card">
+          <div class="row-between">
             <h3>Weight trend</h3><span class="muted" id="weightTrendText"></span>
           </div>
           <div id="weightSpark" class="spark"></div>
@@ -80,6 +88,7 @@
           <div><div class="eyebrow">NUTRITION</div><h2>Eat with intent.</h2></div>
           <div class="head-actions"><button id="openRecipesBtn" class="text-pill">Recipes</button><button id="openFoodAdd" class="round-btn">+</button></div>
         </div>
+        <div id="nutritionEditDate" class="edit-date hidden"></div>
         <div class="macro-card">
           <div class="cal-big"><span id="calLeft">0</span><small>kcal left</small></div>
           <div class="macro-bars" id="macroBars"></div>
@@ -96,6 +105,7 @@
           <div><div class="eyebrow">TRAINING</div><h2 id="trainingTitle">Today's workout</h2></div>
           <button id="addExerciseBtn" class="round-btn">+</button>
         </div>
+        <div id="trainingEditDate" class="edit-date hidden"></div>
         <div id="trainingSummary" class="mini-summary"></div>
         <div id="exerciseCards"></div>
 

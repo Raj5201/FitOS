@@ -1,15 +1,19 @@
-# FitOS v1
+# FitOS v1.3
 
 A private, offline-first iPhone PWA for:
 - onboarding + BMR/TDEE/BMI calculations
 - goal calories/macros
 - daily weight gate (max 2 skips/week)
-- nutrition with the supplied 152-food library
+- nutrition with the existing curated + USDA SR Legacy library
 - 5 meal sections + water
 - custom foods
-- strength workout plans for 3–6 days/week
+- balanced strength workout plans for 3–6 days/week
+- editable 4-day A/B full-body plan
+- same-muscle exercise replacements
+- estimated muscle-contribution percentages for every exercise
 - last-session numbers + weight PR detection
-- walking/treadmill logging
+- daily steps plus walking/treadmill logging
+- editable 7-day dashboard history
 - 50% exercise-calorie credit
 - monthly measurements
 - progress dashboard
@@ -44,3 +48,13 @@ Upload all files to a GitHub repo connected to Cloudflare Pages, same as DailyOS
 - Curated FitOS foods remain at the beginning of the library.
 - Search now prioritizes exact and starts-with matches.
 - USDA SR Legacy is strongest for generic/reference foods; branded barcode products will use a separate live lookup later.
+
+## v1.3 — smarter training and history
+
+- The 4-day option now runs Day A / Day B twice weekly with the complete full-body exercise selection.
+- Exercise replacement is locked to the original muscle group (for example, Back can only be replaced with Back).
+- Exercise cards and the dashboard show estimated primary/secondary muscle contribution percentages. These are programming guidance, not lab-measured EMG results.
+- The 3-, 5-, and 6-day generators use balanced muscle quotas so a Pull day cannot become five Back movements and one Biceps movement.
+- Added daily step tracking and an editable rolling 7-day dashboard history for weight, steps, meals, water, cardio, and workouts.
+- Food entry uses ml for liquids, grams for solids, and quantities for supported standard items such as eggs and berries.
+- No additional bulk food dump was bundled in v1.3; this keeps the PWA download reasonable while preserving the existing 7,972 searchable entries.
